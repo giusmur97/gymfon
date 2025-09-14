@@ -1,0 +1,335 @@
+@import "tailwindcss";
+@import "@fontsource-variable/manrope/index.css";
+@import "@fontsource-variable/space-grotesk/index.css";
+
+:root {
+  /* Light theme colors - White + Azzurro Napoli with gold accents */
+  --background: #FDFEFF; /* quasi bianco */
+  --foreground: #0F172A; /* slate-900 */
+  --text: #0F172A;
+  --text-contrast: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #EAF5FF; /* azzurro chiarissimo */
+  --muted: #475569; /* slate-600 */
+  --border: #DCE7F4;
+  --input: #DCE7F4;
+  --muted-foreground: #64748B;
+  --card: #FFFFFF;
+  --popover: #FFFFFF;
+  --primary: #2F6DD2; /* azzurro Napoli profondo */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5FAFF;
+  --secondary-foreground: #0F172A;
+  --accent: #F5FAFF;
+  --accent-foreground: #0F172A;
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+  --ring: #2F6DD2;
+  --radius: 0.5rem;
+  /* Gold accents */
+  --gold-400: #E8C547;
+  --gold-500: #D4AF37;
+}
+
+.dark {
+  /* Dark theme colors - Black + Azzurro + Gold accents */
+  --background: #07090B; /* quasi nero */
+  --foreground: #E6EDF7; /* azzurro chiarissimo */
+  --text: #E6EDF7;
+  --text-contrast: #0a0a0a;
+  --surface: #0D1117;
+  --surface-2: #111827;
+  --muted: #9AA7B7;
+  --border: #1F2937;
+  --input: #1F2937;
+  --muted-foreground: #93A1B5;
+  --card: #0D1117;
+  --popover: #0D1117;
+  --primary: #3B82F6; /* azzurro accesso */
+  --primary-foreground: #f8fafc;
+  --secondary: #0B1220;
+  --secondary-foreground: #E6EDF7;
+  --accent: #0B1220;
+  --accent-foreground: #E6EDF7;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
+  --ring: #3B82F6;
+  /* Gold accents */
+  --gold-400: #E8C547;
+  --gold-500: #D4AF37;
+  
+  /* Dark mode specific brand colors */
+  --color-brand-50: #0D1B2A;
+  --color-brand-100: #1B263B;
+  --color-brand-900: #0A101D;
+  
+  /* Enhanced contrast for accessibility */
+  --color-link: #60a5fa;
+  --color-link-hover: #3b82f6;
+}
+
+/* Fallback for system preference when no class is set */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --background: #07090B;
+    --foreground: #E6EDF7;
+    --text: #E6EDF7;
+    --text-contrast: #0a0a0a;
+    --surface: #0D1117;
+    --surface-2: #111827;
+    --muted: #9AA7B7;
+    --border: #1F2937;
+    --input: #1F2937;
+    --muted-foreground: #93A1B5;
+    --card: #0D1117;
+    --popover: #0D1117;
+    --primary: #3B82F6;
+    --primary-foreground: #f8fafc;
+    --secondary: #0B1220;
+    --secondary-foreground: #E6EDF7;
+    --accent: #0B1220;
+    --accent-foreground: #E6EDF7;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #fafafa;
+    --ring: #3B82F6;
+    --gold-400: #E8C547;
+    --gold-500: #D4AF37;
+    
+    /* Enhanced contrast for accessibility */
+    --color-link: #60a5fa;
+    --color-link-hover: #3b82f6;
+  }
+}
+
+@theme inline {
+  /* Primary (Azzurro Napoli) */
+  --color-primary: var(--primary);
+  --color-primary-600: #275BB0;
+  --color-primary-700: #1E478A;
+  --color-on-primary: #FFFFFF;
+
+  /* Brand scale (aliases) */
+  --color-brand-50: #EAF5FF;
+  --color-brand-100: #CFE6FF;
+  --color-brand-200: #A8D1FF;
+  --color-brand-300: #7AB7FF;
+  --color-brand-400: #4C99F0;
+  --color-brand-500: #2F6DD2;
+  --color-brand-600: #275BB0;
+  --color-brand-700: #1E478A;
+  --color-brand-800: #183A70;
+  --color-brand-900: #112A52;
+
+  /* Gold accents */
+  --color-accent-400: var(--gold-400);
+  --color-accent-500: var(--gold-500);
+
+  /* Support Blue (links) */
+  --color-link: #2F6DD2;
+  --color-link-hover: #275BB0;
+
+  /* Feedback */
+  --color-success-500: #14B8A6;
+  --color-warning-500: #F59E0B;
+  --color-error-500: #EF4444;
+
+  /* Surfaces */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+
+  --color-background: var(--background);
+  --color-foreground: var(--text);
+
+  /* Typography */
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-serif: "Space Grotesk Variable", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Radii and shadows */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.06), 0 1px 1px rgba(2, 6, 23, 0.04);
+  --shadow-md: 0 6px 16px rgba(2, 6, 23, 0.08), 0 2px 4px rgba(2, 6, 23, 0.04);
+  --shadow-lg: 0 16px 40px rgba(2, 6, 23, 0.12), 0 8px 16px rgba(2, 6, 23, 0.06);
+}
+
+/* 3D card transitions */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 260ms ease, box-shadow 260ms ease;
+  will-change: transform;
+}
+.card-3d:hover {
+  transform: translateY(-6px) rotateX(2deg) rotateY(-2deg);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+/* Utils */
+.container-page {
+  @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-[var(--radius-md)] px-5 py-3 text-sm font-semibold transition-colors shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50;
+  transition: transform 150ms ease, box-shadow 200ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.btn-primary {
+  @apply text-white;
+  background-color: var(--color-primary);
+}
+.btn-primary:hover { background-color: var(--color-primary-600); transform: translateY(-1px); }
+.btn-primary:active { background-color: var(--color-primary-700); transform: translateY(0) scale(0.98); }
+
+.btn-secondary {
+  @apply border;
+  background-color: var(--color-surface);
+  color: var(--color-link);
+  border-color: var(--color-border);
+}
+.btn-secondary:hover { background-color: var(--color-surface-2); color: var(--color-link-hover); transform: translateY(-1px); }
+.btn-secondary:active { transform: translateY(0) scale(0.98); }
+
+.heading-display {
+  font-family: var(--font-serif);
+}
+
+.glass {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.dark .glass {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Card hover micro-motion */
+.card-motion {
+  transition: transform 180ms ease, box-shadow 220ms ease;
+}
+.card-motion:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(0,0,0,0.08); }
+.card-motion:active { transform: translateY(-1px) scale(0.99); }
+
+/* Links */
+.link { color: var(--color-link); transition: color 150ms ease; }
+.link:hover { color: var(--color-link-hover); }
+
+/* Alternate section helper */
+.section-alt { background-color: var(--color-surface-2); }
+
+/* Form input improvements for dark mode */
+input, textarea, select {
+  color-scheme: light dark;
+}
+
+.dark input, .dark textarea, .dark select {
+  color-scheme: dark;
+}
+
+/* Improved focus states for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-2;
+}
+
+.dark .focus-ring {
+  @apply focus:ring-offset-background;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: #000000;
+    --muted: #333333;
+  }
+  
+  .dark {
+    --border: #ffffff;
+    --muted: #cccccc;
+  }
+}
+
+/* Page transition & reveal */
+@keyframes reveal-sweep {
+  0% { transform: translateY(0%); opacity: 1; }
+  80% { transform: translateY(-96%); opacity: 0.9; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+
+.page-reveal { animation: reveal-sweep 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.reveal-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,0.2) 60%, transparent 70%);
+  box-shadow: 0 0 0 8px rgba(255,255,255,0.12), 0 0 80px rgba(255,255,255,0.4) inset;
+}
+
+@keyframes page-in {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); filter: blur(6px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.page-enter { animation: page-in 420ms ease-out; }
+
+/* Floating orbs */
+.orb {
+  position: absolute;
+  filter: blur(42px);
+  opacity: 0.35;
+  mix-blend-mode: lighten;
+  border-radius: 50%;
+}
+.orb-1 { background: #7AB7FF; width: 26rem; height: 26rem; top: -6rem; left: -6rem; animation: orb-float-1 18s ease-in-out infinite alternate; }
+.orb-2 { background: #2F6DD2; width: 22rem; height: 22rem; bottom: -5rem; right: -7rem; animation: orb-float-2 22s ease-in-out infinite alternate; }
+.orb-3 { background: var(--gold-500); width: 18rem; height: 18rem; top: 40%; left: 70%; animation: orb-float-3 20s ease-in-out infinite alternate; }
+
+@keyframes orb-float-1 { from { transform: translate(0,0); } to { transform: translate(40px, 20px); } }
+@keyframes orb-float-2 { from { transform: translate(0,0); } to { transform: translate(-30px, -30px); } }
+@keyframes orb-float-3 { from { transform: translate(0,0); } to { transform: translate(-20px, 30px); } }
+
+/* Reveal on scroll */
+@keyframes rise-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.reveal-out { opacity: 0; transform: translateY(14px) scale(0.98); }
+.reveal-in { animation: rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* Animated gradient text */
+.animated-gradient-text {
+  background: linear-gradient(90deg, var(--gold-500), #7AB7FF, #2F6DD2, var(--gold-400));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}

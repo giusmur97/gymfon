@@ -1,0 +1,21 @@
+{
+  "name": "Gym Fonty",
+  "short_name": "GymFonty",
+  "icons": [
+    {
+      "src": "/fonty.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/fonty.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#2F6DD2",
+  "background_color": "#FDFEFF",
+  "display": "standalone"
+}
+
+
