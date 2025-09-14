@@ -1,0 +1,538 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  name                    String
+  email                   String    @unique
+  passwordHash            String
+  role                    String    @default("client") // 'admin' | 'staff' | 'client'
+  hasActiveSessions       Boolean   @default(false)
+  nutritionalPreferences  Json?
+  addresses               Json?
+  
+  // Trainer-specific fields
+  bio                     String?
+  avatar                  String?
+  certifications          String[]
+  specializations         String[]
+  hourlyRate              Decimal?  @db.Decimal(10,2)
+  
+  // User preferences
+  preferences             Json?     // UserPreferences object
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  // Existing relations
+  orders                  Order[]
+  bookings                Booking[]
+  tickets                 Ticket[]
+  accounts                Account[]
+  
+  // New trainer relations
+  trainerCourses          Course[]  @relation("TrainerCourses")
+  enrolledCourses         Enrollment[]
+  trainerWorkouts         WorkoutPlan[] @relation("TrainerWorkouts")
+  clientWorkouts          WorkoutPlan[] @relation("ClientWorkouts")
+  trainerNutrition        NutritionPlan[] @relation("TrainerNutrition")
+  clientNutrition         NutritionPlan[] @relation("ClientNutrition")
+  trainerSessions         TrainingSession[] @relation("TrainerSessions")
+  clientSessions          TrainingSession[] @relation("ClientSessions")
+  subscriptions           Subscription[]
+  trainerAvailability     Availability[]
+  clientProgress          ClientProgress[]
+  
+  // Client management relations
+  clientProfile           ClientProfile?
+  measurementsTaken       BodyMeasurement[] @relation("MeasurementsTaken")
+  photosUploaded          ClientPhoto[] @relation("PhotosUploaded")
+  documentsUploaded       ClientDocument[] @relation("DocumentsUploaded")
+  auditActions            AuditLog[] @relation("UserActions")
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  price         Decimal     @db.Decimal(10,2)
+  sku           String      @unique
+  inventory     Int         @default(0)
+  images        Json?
+  category      String
+  nutritionInfo Json?
+  variants      Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  title        String
+  shortDesc    String
+  longDesc     String
+  priceOptions Json
+  inclusions   Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  total           Decimal     @db.Decimal(10,2)
+  status          String      @default("pending")
+  paymentId       String?
+  shippingAddress Json?
+  createdAt       DateTime    @default(now())
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(10,2)
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  title      String
+  city       String
+  venue      String
+  date       DateTime
+  capacity   Int
+  bookedCount Int     @default(0)
+  bookings   Booking[]
+}
+
+model Booking {
+  id        String  @id @default(cuid())
+  eventId   String
+  event     Event   @relation(fields: [eventId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  seat      String?
+  status    String  @default("reserved")
+  paymentId String?
+}
+
+model Recipe {
+  id           String @id @default(cuid())
+  name         String
+  ingredients  Json   // Ingredient[] array
+  instructions String[]
+  calories     Int
+  macros       Json   // MacroTargets object
+  servings     Int
+  prepTime     Int    // minutes
+  cookTime     Int    // minutes
+  tags         String[]
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Ticket {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  subject   String
+  message   String
+  status    String  @default("open")
+  assignee  String?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id])
+  provider          String
+  providerAccountId String
+  type              String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+
+  @@unique([provider, providerAccountId])
+}
+
+
+// Course Management Models
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  trainerId   String
+  trainer     User     @relation("TrainerCourses", fields: [trainerId], references: [id])
+  modules     CourseModule[]
+  price       Decimal  @db.Decimal(10,2)
+  duration    Int      // weeks
+  difficulty  String   // 'beginner' | 'intermediate' | 'advanced'
+  tags        String[]
+  thumbnail   String?
+  status      String   @default("draft") // 'draft' | 'published' | 'archived'
+  enrollments Enrollment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CourseModule {
+  id       String   @id @default(cuid())
+  title    String
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+  order    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lesson {
+  id       String       @id @default(cuid())
+  title    String
+  moduleId String
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  content  Json         // LessonContent object
+  duration Int          // minutes
+  order    Int
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  progress   Json?    // Progress tracking data
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([userId, courseId])
+}
+
+// Workout Management Models
+model WorkoutPlan {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  trainerId   String
+  trainer     User      @relation("TrainerWorkouts", fields: [trainerId], references: [id])
+  clientId    String
+  client      User      @relation("ClientWorkouts", fields: [clientId], references: [id])
+  workouts    Workout[]
+  duration    Int       // weeks
+  status      String    @default("active") // 'active' | 'completed' | 'paused'
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Workout {
+  id            String      @id @default(cuid())
+  name          String
+  workoutPlanId String
+  workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercises     Exercise[]
+  restTime      Int         // seconds between exercises
+  notes         String?
+  scheduledDate DateTime?
+  order         Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Exercise {
+  id           String  @id @default(cuid())
+  name         String
+  description  String
+  workoutId    String
+  workout      Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  sets         Int
+  reps         String  // "8-12" for ranges or "10" for fixed
+  weight       Decimal? @db.Decimal(8,2)
+  duration     Int?    // seconds for time-based exercises
+  restTime     Int     // seconds between sets
+  videoUrl     String?
+  instructions String[]
+  order        Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Nutrition Management Models
+model NutritionPlan {
+  id            String   @id @default(cuid())
+  name          String
+  trainerId     String
+  trainer       User     @relation("TrainerNutrition", fields: [trainerId], references: [id])
+  clientId      String
+  client        User     @relation("ClientNutrition", fields: [clientId], references: [id])
+  startDate     DateTime
+  endDate       DateTime
+  dailyCalories Int
+  macros        Json     // MacroTargets object
+  meals         Json     // MealPlan[] array
+  status        String   @default("active") // 'active' | 'completed' | 'paused'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Session Management Models
+model TrainingSession {
+  id                    String   @id @default(cuid())
+  trainerId             String
+  trainer               User     @relation("TrainerSessions", fields: [trainerId], references: [id])
+  clientId              String
+  client                User     @relation("ClientSessions", fields: [clientId], references: [id])
+  type                  String   // 'online' | 'in-person'
+  date                  DateTime
+  duration              Int      // minutes
+  status                String   @default("scheduled") // 'scheduled' | 'completed' | 'cancelled' | 'no-show'
+  price                 Decimal  @db.Decimal(10,2)
+  notes                 String?
+  meetingLink           String?
+  location              String?
+  feedback              Json?    // Session feedback and ratings
+  googleCalendarEventId String?  // Google Calendar event ID for sync
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Availability {
+  id          String @id @default(cuid())
+  trainerId   String
+  trainer     User   @relation(fields: [trainerId], references: [id])
+  dayOfWeek   Int    // 0-6 (Sunday to Saturday)
+  startTime   String // "09:00"
+  endTime     String // "17:00"
+  isAvailable Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([trainerId, dayOfWeek, startTime])
+}
+
+// Subscription and Payment Models
+model SubscriptionPlan {
+  id            String         @id @default(cuid())
+  name          String
+  description   String
+  price         Decimal        @db.Decimal(10,2)
+  interval      String         // 'monthly' | 'yearly'
+  features      String[]
+  maxClients    Int?           // for trainer plans
+  maxCourses    Int?           // for trainer plans
+  stripePriceId String?        @unique
+  isActive      Boolean        @default(true)
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Subscription {
+  id                   String           @id @default(cuid())
+  userId               String
+  user                 User             @relation(fields: [userId], references: [id])
+  planId               String
+  plan                 SubscriptionPlan @relation(fields: [planId], references: [id])
+  status               String           // 'active' | 'cancelled' | 'past_due' | 'unpaid'
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean          @default(false)
+  stripeSubscriptionId String?          @unique
+  stripeCustomerId     String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+// Progress Tracking Models
+model ClientProgress {
+  id           String        @id @default(cuid())
+  clientId     String
+  client       User          @relation(fields: [clientId], references: [id])
+  workoutStats Json?         // WorkoutStats object
+  nutritionStats Json?       // NutritionStats object
+  bodyMetrics  BodyMetric[]
+  goals        Goal[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@unique([clientId])
+}
+
+model BodyMetric {
+  id               String         @id @default(cuid())
+  clientProgressId String
+  clientProgress   ClientProgress @relation(fields: [clientProgressId], references: [id], onDelete: Cascade)
+  date             DateTime
+  weight           Decimal?       @db.Decimal(5,2)
+  bodyFat          Decimal?       @db.Decimal(5,2)
+  muscleMass       Decimal?       @db.Decimal(5,2)
+  measurements     Json?          // { chest: 100, waist: 80, etc. }
+  createdAt        DateTime       @default(now())
+}
+
+model Goal {
+  id               String         @id @default(cuid())
+  clientProgressId String
+  clientProgress   ClientProgress @relation(fields: [clientProgressId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  targetValue      Decimal?       @db.Decimal(10,2)
+  currentValue     Decimal?       @db.Decimal(10,2)
+  unit             String?        // 'kg', 'lbs', '%', etc.
+  targetDate       DateTime?
+  status           String         @default("active") // 'active' | 'completed' | 'paused'
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+// Client Management Models
+model ClientProfile {
+  id                    String              @id @default(cuid())
+  userId                String              @unique
+  user                  User                @relation(fields: [userId], references: [id])
+  
+  // Anagrafica
+  firstName             String
+  lastName              String
+  birthDate             DateTime
+  birthPlace            String
+  phone                 String?
+  address               String?
+  profession            String?
+  generalNotes          String?
+  
+  // Cloud storage
+  cloudFolderId         String?             // Google Drive or Dropbox folder ID
+  cloudProvider         String?             // 'google_drive' | 'dropbox'
+  
+  // Anamnesi (stored as JSON for flexibility)
+  sportsHistory         Json?               // SportsAnamnesis
+  physiologicalHistory  Json?               // PhysiologicalAnamnesis
+  pathologicalHistory   Json?               // PathologicalAnamnesis
+  nutritionDiary        Json?               // NutritionDiary
+  
+  // Relations
+  bodyMeasurements      BodyMeasurement[]
+  photos                ClientPhoto[]
+  documents             ClientDocument[]
+  gdprConsents          GDPRConsent[]
+  auditLogs             AuditLog[]
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+}
+
+model BodyMeasurement {
+  id              String        @id @default(cuid())
+  clientId        String
+  client          ClientProfile @relation(fields: [clientId], references: [id])
+  date            DateTime
+  weight          Decimal?      @db.Decimal(5,2)
+  height          Decimal?      @db.Decimal(5,2)
+  bodyFat         Decimal?      @db.Decimal(5,2)
+  muscleMass      Decimal?      @db.Decimal(5,2)
+  bodyWater       Decimal?      @db.Decimal(5,2)
+  circumferences  Json?         // Circumferences object
+  notes           String?
+  measuredBy      String
+  measurer        User          @relation("MeasurementsTaken", fields: [measuredBy], references: [id])
+  createdAt       DateTime      @default(now())
+}
+
+model ClientPhoto {
+  id             String        @id @default(cuid())
+  clientId       String
+  client         ClientProfile @relation(fields: [clientId], references: [id])
+  type           String        // 'front' | 'back' | 'side' | 'progress'
+  cloudUrl       String        // Link to cloud storage (preview)
+  downloadUrl    String?       // Direct download link
+  thumbnailUrl   String?       // Thumbnail URL
+  fileName       String
+  fileSize       Int
+  mimeType       String
+  cloudFileId    String?       // Cloud provider file ID
+  cloudProvider  String?       // 'google_drive' | 'dropbox'
+  uploadDate     DateTime      @default(now())
+  notes          String?
+  uploadedBy     String
+  uploader       User          @relation("PhotosUploaded", fields: [uploadedBy], references: [id])
+}
+
+model ClientDocument {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        ClientProfile @relation(fields: [clientId], references: [id])
+  type          String        // 'medical_certificate' | 'self_certification' | 'consent' | 'other'
+  name          String
+  cloudUrl      String
+  downloadUrl   String?
+  fileName      String
+  fileSize      Int
+  mimeType      String
+  cloudFileId   String?
+  cloudProvider String?
+  uploadDate    DateTime      @default(now())
+  expiryDate    DateTime?
+  isValid       Boolean       @default(true)
+  uploadedBy    String
+  uploader      User          @relation("DocumentsUploaded", fields: [uploadedBy], references: [id])
+}
+
+model GDPRConsent {
+  id          String        @id @default(cuid())
+  clientId    String
+  client      ClientProfile @relation(fields: [clientId], references: [id])
+  type        String        // 'general_privacy' | 'health_data' | 'marketing' | 'medical_sharing'
+  isGranted   Boolean
+  grantedAt   DateTime?
+  revokedAt   DateTime?
+  method      String        // 'digital_signature' | 'checkbox' | 'verbal' | 'paper'
+  ipAddress   String?
+  userAgent   String?
+  version     String        // Version of consent form
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AuditLog {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation("UserActions", fields: [userId], references: [id])
+  clientId     String?
+  client       ClientProfile? @relation(fields: [clientId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String
+  timestamp    DateTime      @default(now())
+  ipAddress    String
+  userAgent    String
+  changes      Json?         // JSON of changes made
+}
+
+// Notification Models
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // 'booking' | 'payment' | 'course' | 'workout' | 'nutrition'
+  data      Json?    // Additional notification data
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

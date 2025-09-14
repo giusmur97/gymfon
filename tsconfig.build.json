@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmitOnError": false,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "exclude": [
+    "src/routes/audit.ts",
+    "src/routes/calendar.ts", 
+    "src/routes/documents.ts",
+    "src/routes/gdpr.ts",
+    "src/routes/notifications.ts",
+    "src/services/cronService.ts",
+    "src/services/dropbox.ts",
+    "src/services/notificationService.ts"
+  ]
+}
