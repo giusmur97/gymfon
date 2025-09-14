@@ -1,233 +1,155 @@
-
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const session = require('express-session');
-const passport = require('passport');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const { PrismaClient } = require('@prisma/client');
-
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { PrismaClient } from "@prisma/client";
+import session from "express-session";
+import passport from "passport";
+import { setupPassport } from "./auth/passport";
+import authRoutes from "./routes/auth";
+import uploadRoutes from "./routes/upload";
+import clientsRoutes from "./routes/clients-simple";
+import photosRoutes from "./routes/photos-simple";
+import documentsRoutes from "./routes/documents";
+import dashboardRoutes from "./routes/dashboard";
 const app = express();
 const prisma = new PrismaClient();
-
-// Middleware
 app.use(helmet());
+// Flexible CORS: allow multiple local origins and configured list
+const defaultOrigins = [
+    process.env.FRONTEND_ORIGIN ?? "http://localhost:3000",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+];
+const configuredOrigins = (process.env.CORS_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...configuredOrigins]));
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true); // allow server-to-server or curl
+        if (allowedOrigins.includes(origin))
+            return callback(null, true);
+        return callback(new Error(`Not allowed by CORS: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
 }));
-
+// Handle preflight requests explicitly for all routes
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        return res.status(204).end();
+    }
+    next();
+});
 app.use(express.json());
 app.use(morgan("dev"));
-
-// Health check
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+app.use(session({
+    secret: process.env.JWT_SECRET ?? "dev",
+    resave: false,
+    saveUninitialized: false,
+}));
+setupPassport();
+app.use(passport.initialize());
+app.use(passport.session());
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "gymfonty-api", time: new Date().toISOString() });
+    res.json({ ok: true, service: "gymfonty-api", time: new Date().toISOString() });
 });
-
-// Auth routes
-app.post('/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-    
-    const validPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-    
-    const token = jwt.sign(
-      { sub: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: '7d' }
-    );
-    
-    res.json({
-      message: 'Login successful',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-      token,
-      requiresOnboarding: true
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Client routes
-app.get('/api/clients', async (req, res) => {
-  try {
-    const clients = await prisma.user.findMany({
-      where: { role: 'client' },
-      select: { id: true, name: true, email: true, createdAt: true }
-    });
-    res.json({ clients });
-  } catch (error) {
-    console.error('Get clients error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/clients/add-manual', async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(400).json({ error: 'User with this email already exists' });
-    }
-    
-    const client = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash: 'oauth',
-        role: 'client',
-        hasActiveSessions: true,
-        preferences: {
-          theme: 'system',
-          language: 'it',
-          notifications: { email: true, push: true, marketing: false },
+app.use("/auth", authRoutes);
+// app.use("/api/courses", coursesRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/clients", clientsRoutes);
+app.use("/api/photos", photosRoutes);
+// app.use("/api/gdpr", gdprRoutes);
+app.use("/api/documents", documentsRoutes);
+// app.use("/api/audit", auditRoutes);
+// app.use("/api/calendar", calendarRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.get("/api/products", async (_req, res) => {
+    // Mock data for development - replace with database call when ready
+    const products = [
+        {
+            id: "1",
+            name: "Proteine Whey",
+            description: "Proteine del siero del latte di alta qualità",
+            price: 29.99,
+            category: "Integratori",
+            createdAt: new Date()
         },
-      },
-      select: { id: true, name: true, email: true, role: true, hasActiveSessions: true, createdAt: true },
-    });
-    
-    res.status(201).json({ message: 'Client added successfully', client });
-  } catch (error) {
-    console.error('Add manual client error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+        {
+            id: "2",
+            name: "Creatina Monoidrato",
+            description: "Creatina pura per prestazioni ottimali",
+            price: 19.99,
+            category: "Integratori",
+            createdAt: new Date()
+        }
+    ];
+    res.json(products);
 });
-
-app.patch('/api/clients/:id/basic', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email } = req.body;
-    
-    const client = await prisma.user.update({
-      where: { id },
-      data: { name, email },
-      select: { id: true, name: true, email: true, updatedAt: true }
-    });
-    
-    res.json({ message: 'Client updated', client });
-  } catch (error) {
-    console.error('Update client error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+app.get("/api/services", async (_req, res) => {
+    // Mock data for development - replace with database call when ready
+    const services = [
+        {
+            id: "1",
+            title: "Personal Training",
+            shortDesc: "Allenamento personalizzato one-to-one",
+            priceOptions: { basic: { price: 50 } },
+            createdAt: new Date()
+        },
+        {
+            id: "2",
+            title: "Consulenza Nutrizionale",
+            shortDesc: "Piano alimentare personalizzato",
+            priceOptions: { basic: { price: 80 } },
+            createdAt: new Date()
+        },
+        {
+            id: "3",
+            title: "Workout di Gruppo",
+            shortDesc: "Allenamenti in piccoli gruppi",
+            priceOptions: { basic: { price: 25 } },
+            createdAt: new Date()
+        }
+    ];
+    res.json(services);
 });
-
-app.get('/api/clients/:id/profile', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const client = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, name: true, email: true, hasActiveSessions: true, profile: true }
-    });
-    
-    if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
-    }
-    
-    res.json({ client });
-  } catch (error) {
-    console.error('Get client profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+app.get("/api/events", async (_req, res) => {
+    // Mock data for development - replace with database call when ready
+    const events = [
+        {
+            id: "1",
+            title: "Workshop Nutrizione",
+            description: "Impara i fondamenti della nutrizione sportiva",
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next week
+            location: "Gym Fonty",
+            maxParticipants: 20
+        },
+        {
+            id: "2",
+            title: "Competizione Crossfit",
+            description: "Gara amichevole di crossfit",
+            date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // In 2 weeks
+            location: "Gym Fonty",
+            maxParticipants: 50
+        }
+    ];
+    res.json(events);
 });
-
-app.get('/api/clients/:id/profile-export', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const client = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, name: true, email: true, profile: true }
-    });
-    
-    if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
-    }
-    
-    res.json(client);
-  } catch (error) {
-    console.error('Export client profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.get('/api/clients/me/permissions', async (req, res) => {
-  try {
-    const permissions = {
-      role: 'admin',
-      userId: 'admin-id',
-      hasActiveSessions: true,
-      hasGestionaleAccess: true,
-      permissions: {
-        canManageWorkouts: true,
-        canManageClients: true,
-        canViewAnalytics: true,
-        canManageSystem: true,
-      },
-      clientPermissions: null,
-    };
-    
-    res.json(permissions);
-  } catch (error) {
-    console.error('Get permissions error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Dashboard routes
-app.get('/api/dashboard/admin/analytics-test', async (req, res) => {
-  try {
-    const stats = {
-      totalUsers: 150,
-      totalClients: 120,
-      totalTrainers: 15,
-      activeSubscriptions: 95,
-      monthlyRevenue: 12500,
-      sessionsThisMonth: 340,
-      coursesEnrolled: 45,
-      gdprRequests: 3,
-    };
-    
-    const metrics = {
-      dailyActiveUsers: [
-        { date: '2024-01-01', count: 25 },
-        { date: '2024-01-02', count: 32 },
-        { date: '2024-01-03', count: 28 },
-      ],
-      popularFeatures: [
-        { feature: 'Workout Tracking', usage: 85 },
-        { feature: 'Nutrition Planning', usage: 72 },
-        { feature: 'Progress Photos', usage: 68 },
-      ],
-      userGrowth: [
-        { month: '2024-01', users: 120 },
-        { month: '2024-02', users: 135 },
-        { month: '2024-03', users: 150 },
-      ],
-    };
-    
-    res.json({ stats, metrics });
-  } catch (error) {
-    console.error('Get admin analytics error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Start server
-const port = Number(process.env.PORT || 4000);
+const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {
-  console.log(`Gym Fonty API listening on http://localhost:${port}`);
+    console.log(`Gym Fonty API listening on http://localhost:${port}`);
 });

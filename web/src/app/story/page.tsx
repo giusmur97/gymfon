@@ -1,3 +1,5 @@
+"use client";
+
 import Scrolly from "@/components/Scrolly";
 
 const steps = [

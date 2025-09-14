@@ -13,7 +13,7 @@ interface User {
   certifications?: string[];
   specializations?: string[];
   hourlyRate?: number;
-  preferences?: any;
+  preferences?: Record<string, unknown>;
   hasActiveSessions?: boolean;
 }
 
@@ -25,8 +25,8 @@ interface AuthContextType {
   loading: boolean;
   refreshUser: () => Promise<void>;
   selectRole: (role: string) => Promise<{ success: boolean; error?: string }>;
-  completeTrainerProfile: (data: any) => Promise<{ success: boolean; error?: string }>;
-  completeClientProfile: (data: any) => Promise<{ success: boolean; error?: string }>;
+  completeTrainerProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+  completeClientProfile: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,10 +151,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         success: true, 
         requiresOnboarding: response.requiresOnboarding 
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        error: error.message || 'Login failed' 
+        error: error instanceof Error ? error.message : 'Login failed' 
       };
     }
   };
@@ -188,10 +188,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         success: true, 
         requiresOnboarding: response.requiresOnboarding 
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        error: error.message || 'Registration failed' 
+        error: error instanceof Error ? error.message : 'Registration failed' 
       };
     }
   };
@@ -231,15 +231,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(response.user);
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        error: error.message || 'Role selection failed' 
+        error: error instanceof Error ? error.message : 'Role selection failed' 
       };
     }
   };
 
-  const completeTrainerProfile = async (data: any) => {
+  const completeTrainerProfile = async (data: Record<string, unknown>) => {
     if (DEMO_ADMIN) return { success: true };
     try {
       const response = await apiCall('/auth/complete-trainer-profile', {
@@ -251,15 +251,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('user', JSON.stringify(response.user));
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        error: error.message || 'Profile completion failed' 
+        error: error instanceof Error ? error.message : 'Profile completion failed' 
       };
     }
   };
 
-  const completeClientProfile = async (data: any) => {
+  const completeClientProfile = async (data: Record<string, unknown>) => {
     if (DEMO_ADMIN) return { success: true };
     try {
       const response = await apiCall('/auth/complete-client-profile', {
@@ -271,10 +271,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('user', JSON.stringify(response.user));
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { 
         success: false, 
-        error: error.message || 'Profile completion failed' 
+        error: error instanceof Error ? error.message : 'Profile completion failed' 
       };
     }
   };
