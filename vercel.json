@@ -3,8 +3,5 @@
   "outputDirectory": "web/.next",
   "framework": "nextjs",
   "installCommand": "cd web && npm install",
-  "devCommand": "cd web && npm run dev",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@next_public_api_url"
-  }
+  "devCommand": "cd web && npm run dev"
 }
