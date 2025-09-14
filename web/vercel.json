@@ -3,6 +3,5 @@
   "outputDirectory": "web/.next",
   "framework": "nextjs",
   "installCommand": "cd web && npm install",
-  "devCommand": "cd web && npm run dev",
-  "rootDirectory": "web"
+  "devCommand": "cd web && npm run dev"
 }
